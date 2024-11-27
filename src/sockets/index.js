@@ -1,30 +1,33 @@
-const {saveMessage} = require('../services/messageService');
+const {saveMessage, getMessageHistory} = require('../services/messageService');
 
 module.exports = (io) => {
     io.on('connection', (socket) => {
-        console.log(`User connected: ${socket.id}`);
+        console.log(`A user connected: ${socket.id}`);
 
-        socket.on('new_message', async (data) => {
+        socket.on('joinChat', async (chat_id) => {
+            console.log(`User joined chat: ${chat_id}`);
+
             try {
-                console.log('Message received:', data);
-
-                const savedMessage = await saveMessage({
-                    chat_id: data.chat_id,
-                    user_id: data.user_id,
-                    content: data.content,
-                });
-
-                console.log('Message has been saved in db:', savedMessage);
-
-                io.to(`chat_${data.chat_id}`).emit('message_saved', savedMessage);
+                const messages = await getMessageHistory(chat_id);
+                socket.emit('chatHistory', messages);
             } catch (error) {
-                console.error('Message preparation error:', error);
-                socket.emit('error_saving_message', { error: 'Failed to save message' });
+                console.error('Error fetching chat history:', error);
+            }
+        });
+
+        socket.on('message', async (data) => {
+            console.log('Message received:', data);
+
+            try {
+                const savedMessage = await saveMessage(data);
+                console.log('Message saved:', savedMessage);
+            } catch (error) {
+                console.error('Error writing:', error);
             }
         });
 
         socket.on('disconnect', () => {
-            console.log(`User is disconnected: ${socket.id}`);
+            console.log(`A user disconnected: ${socket.id}`);
         });
     });
 };

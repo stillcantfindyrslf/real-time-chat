@@ -17,4 +17,18 @@ const saveMessage = async (messageData) => {
     }
 };
 
-module.exports = { saveMessage };
+const getMessageHistory = async (chat_id) => {
+    try {
+        return await Message.findAll({
+            where: { chat_id },
+            order: [['created_at', 'ASC']],
+        });
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+    }
+};
+
+module.exports = {
+    saveMessage,
+    getMessageHistory
+};
